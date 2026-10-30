@@ -1,0 +1,17 @@
+-- Pre-seeded Restaurant Accounts
+INSERT IGNORE INTO users (id, full_name, role, restaurant_name, username, password) VALUES
+(1, 'Paradise Manager', 'RESTAURANT', 'Paradise Biryani', 'paradise', 'pass123'),
+(2, 'Bawarchi Manager', 'RESTAURANT', 'Bawarchi Restaurant', 'bawarchi', 'pass123'),
+(3, 'Pista House Manager', 'RESTAURANT', 'Pista House', 'pistahouse', 'pass123'),
+(4, 'Mehfil Manager', 'RESTAURANT', 'Mehfil Restaurant', 'mehfil', 'pass123'),
+(5, 'Chutneys Manager', 'RESTAURANT', 'Chutneys', 'chutneys', 'pass123');
+
+-- Pre-seeded Surplus Food Donations
+INSERT IGNORE INTO donations (id, title, food_type, quantity, unit, pickup_address, expiry_time, donor_name, status) VALUES
+(1, 'Chicken Biryani & Mirchi Ka Salan', 'Cooked Food', 15, 'Plates', 'Paradise Biryani, Secunderabad', '2026-10-30 22:00:00', 'Paradise Biryani', 'AVAILABLE'),
+(2, 'Mutton Dum Biryani', 'Cooked Food', 20, 'Portions', 'Bawarchi, RTC X Roads', '2026-10-30 23:00:00', 'Bawarchi Restaurant', 'AVAILABLE'),
+(3, 'Bakery Snacks & Haleem', 'Bakery & Meals', 10, 'Kg', 'Pista House, Charminar', '2026-10-31 18:00:00', 'Pista House', 'AVAILABLE');
+
+-- Pre-seeded Admin Account
+INSERT IGNORE INTO users (id, full_name, role, restaurant_name, username, password) VALUES
+(99, 'System Administrator', 'ADMIN', 'FoodLoop HQ', 'admin', 'admin123');

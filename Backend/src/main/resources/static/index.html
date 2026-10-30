@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodLoop - Real-Time Surplus Food Recovery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --secondary: #3b82f6;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --white: #ffffff;
+            --gray: #6b7280;
+            --admin-accent: #8b5cf6;
+            --impact-color: #059669;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; 
+            background-image: url('watermarked_img_4458328414677293493.png.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--dark); 
+            overflow-x: hidden;
+        }
+
+        body.login-page {
+            background-image: url('FoodLoop%20Donation%20Box%20Still%20Life.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        .food-bg-animations {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0; overflow: hidden;
+        }
+        .floating-food {
+            position: absolute; opacity: 0.15;
+            animation: floatAround 18s ease-in-out infinite alternate;
+            user-select: none;
+        }
+        .food-1 { font-size: 90px; top: 10%; left: 5%; }
+        .food-2 { font-size: 110px; top: 70%; left: 80%; }
+        .food-3 { font-size: 80px; top: 40%; left: 88%; }
+        .food-4 { font-size: 100px; top: 75%; left: 10%; }
+
+        @keyframes floatAround {
+            0% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+            100% { transform: translateY(35px) translateX(-25px) rotate(-10deg); }
+        }
+
+        /* HEADER */
+        .header { 
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            padding: 16px 40px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06); 
+            position: sticky; top: 0; z-index: 100;
+        }
+        .logo-area { display: flex; align-items: center; gap: 14px; position: relative; z-index: 10; }
+        .logo-img { width: 50px; height: 50px; border-radius: 12px; object-fit: cover; box-shadow: 0 3px 6px rgba(0,0,0,0.12); }
+        .logo-text { font-size: 24px; font-weight: 800; color: var(--dark); letter-spacing: -0.5px; }
+        
+        .user-profile { display: flex; align-items: center; gap: 15px; position: relative; z-index: 10; }
+        .user-badge { background: #e6f4ea; color: var(--primary-dark); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .admin-badge { background: linear-gradient(135deg, #ede9fe, #ddd6fe) !important; color: #6d28d9 !important; border: 1px solid #c4b5fd; font-weight: 700; }
+
+        /* BUTTONS */
+        button { padding: 10px 16px; font-size: 13px; font-weight: 600; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; }
+        .btn-primary { background-color: var(--primary); color: var(--white); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-logout { background-color: #fee2e2; color: var(--danger); }
+        .btn-logout:hover { background-color: #fecaca; }
+        
+        .workflow-btn { width: 100%; margin-top: 10px; font-weight: 700; }
+        .btn-claim { background-color: var(--secondary); color: white; }
+        .btn-transit { background-color: var(--warning); color: #78350f; }
+        .btn-deliver { background-color: var(--primary); color: white; }
+        .btn-delete { background-color: #fee2e2; color: var(--danger); width: 100%; margin-top: 10px; }
+
+        /* TOAST NOTIFICATION */
+        #toastContainer {
+            position: fixed; bottom: 30px; right: 30px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .toast {
+            background: var(--dark); color: white; padding: 14px 22px;
+            border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px;
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+        }
+        .toast.success { background: #059669; }
+        .toast.error { background: #dc2626; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(10px); } }
+
+        /* BADGES */
+        .urgency-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+        .urgency-safe { background: #d1fae5; color: #065f46; }
+        .urgency-urgent { background: #fef3c7; color: #b45309; }
+        .urgency-critical { background: #fee2e2; color: #991b1b; }
+        .urgency-expired { background: #e5e7eb; color: #4b5563; text-decoration: line-through; }
+
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .status-AVAILABLE { background: #d1fae5; color: #065f46; }
+        .status-CLAIMED { background: #fef3c7; color: #b45309; }
+        .status-IN_TRANSIT { background: #dbeafe; color: #1e40af; }
+        .status-DELIVERED { background: #ede9fe; color: #6d28d9; }
+        .status-EXPIRED { background: #f3f4f6; color: #6b7280; }
+
+        /* DASHBOARD LAYOUT */
+        .dashboard-container { max-width: 1280px; margin: 30px auto; padding: 0 25px; box-sizing: border-box; position: relative; z-index: 10; }
+        .split-layout { display: grid; grid-template-columns: 360px 1fr; gap: 30px; }
+        .full-width { grid-template-columns: 1fr; }
+
+        /* METRICS & IMPACT BOARDS */
+        .admin-metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .metric-card {
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px);
+            padding: 18px 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid rgba(229, 231, 235, 0.8); display: flex; flex-direction: column; gap: 4px; position: relative; overflow: hidden;
+        }
+        .metric-card::after { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); }
+        .metric-card.impact-theme::after { background: #059669; }
+        .metric-card.admin-theme::after { background: var(--admin-accent); }
+        .metric-title { font-size: 11px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; }
+        .metric-value { font-size: 24px; font-weight: 800; color: var(--dark); }
+
+        .panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); padding: 25px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid rgba(255, 255, 255, 0.9); height: fit-content; }
+        .panel h2 { font-size: 18px; font-weight: 700; margin-top: 0; margin-bottom: 20px; color: var(--dark); }
+
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; flex-wrap: wrap; background: rgba(255,255,255,0.95); padding: 16px 22px; border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
+        .search-input { max-width: 280px; padding: 10px 16px; border-radius: 20px; font-size: 14px; }
+
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .card { 
+            background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(15px); padding: 22px; 
+            border-radius: 18px; box-shadow: 0 6px 20px rgba(0,0,0,0.06); border: 1px solid rgba(229, 231, 235, 0.8); 
+            display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s; 
+        }
+        .card.is-expired { opacity: 0.7; border: 1px dashed #cbd5e1; background: rgba(249, 250, 251, 0.9); }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
+        .restaurant-tag { background: #fef3c7; color: #92400e; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+        
+        .trust-stars { color: #f59e0b; font-size: 11px; margin-left: 4px; }
+
+        .card-body p { margin: 8px 0; font-size: 14px; color: var(--gray); display: flex; align-items: center; gap: 8px; }
+        .card-body strong { color: var(--dark); }
+        .card-title { font-size: 18px; font-weight: 700; color: var(--dark); margin: 0 0 10px 0; }
+
+        .map-container { width: 100%; height: 130px; border-radius: 10px; overflow: hidden; margin-top: 12px; border: 1px solid #e5e7eb; }
+        .map-container iframe { width: 100%; height: 100%; border: 0; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--gray); margin-bottom: 5px; }
+        input, select { width: 100%; padding: 12px 14px; font-size: 14px; border: 1px solid #d1d5db; border-radius: 10px; box-sizing: border-box; outline: none; background: #fff; }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); }
+
+        .auth-wrapper { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 30px 20px; box-sizing: border-box; position: relative; z-index: 10; }
+        .auth-box { 
+            background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(20px); 
+            padding: 45px 40px; border-radius: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.18); 
+            width: 100%; max-width: 460px; border: 1px solid rgba(255, 255, 255, 0.9); 
+        }
+        .auth-box .logo-img { width: 75px; height: 75px; border-radius: 16px; margin: 0 auto 15px auto; display: block; }
+        .auth-box h2 { text-align: center; margin-bottom: 5px; font-size: 26px; font-weight: 800; color: var(--dark); }
+        .auth-box p { font-size: 14px; margin-bottom: 25px; color: var(--gray); text-align: center; }
+        .toggle-link { color: var(--secondary); text-align: center; margin-top: 20px; cursor: pointer; font-size: 14px; font-weight: 600; display: block; }
+        .error-msg { color: var(--danger); font-size: 13px; text-align: center; margin-bottom: 15px; font-weight: 600; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="login-page">
+
+    <div id="toastContainer"></div>
+
+    <div id="floatingBgAnimations" class="food-bg-animations">
+        <div class="floating-food food-1">🍲</div>
+        <div class="floating-food food-2">🍱</div>
+        <div class="floating-food food-3">🥗</div>
+        <div class="floating-food food-4">🍛</div>
+    </div>
+
+    <!-- AUTHENTICATION SCREEN -->
+    <div id="authSection" class="auth-wrapper">
+        <div class="auth-box">
+            <img src="watermarked_img_17775684945128307028.png.png" alt="FoodLoop Logo" class="logo-img">
+            <h2 id="authTitle">Welcome Back</h2>
+            <p id="authSubtitle">Connect kitchens with communities</p>
+
+            <form id="loginForm">
+                <!-- NEW LOGIN ROLE SELECTOR -->
+                <div class="form-group">
+                    <label>Login As</label>
+                    <select id="loginRole" required>
+                        <option value="RESTAURANT">Local Restaurant (Donor)</option>
+                        <option value="NGO">NGO / Volunteer (Rescuer)</option>
+                        <option value="ADMIN">Platform Administrator</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <!-- UPDATED PLACEHOLDER -->
+                    <input type="text" id="loginUsername" placeholder="Enter your username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                <p id="loginError" class="error-msg"></p>
+                <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; font-size: 15px;">Login to Dashboard</button>
+                <span class="toggle-link" onclick="toggleAuthMode(true)">Don't have an account? Register</span>
+            </form>
+
+            <form id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label>Full Name / Contact Person</label>
+                    <input type="text" id="regFullName" placeholder="e.g. Rahul Sharma" required>
+                </div>
+                <div class="form-group">
+                    <label>Select Role</label>
+                    <select id="regRole" onchange="handleRoleChange(this.value)" required>
+                        <option value="RESTAURANT">Local Restaurant (Donor)</option>
+                        <option value="NGO">NGO / Volunteer (Rescuer)</option>
+                        <option value="ADMIN">Platform Administrator</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label id="restNameLabel">Restaurant / Org Name</label>
+                    <input type="text" id="regRestName" placeholder="e.g. Paradise Biryani" required>
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="regUsername" placeholder="Choose a username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="regPassword" placeholder="Choose a password" required>
+                </div>
+                <p id="regError" class="error-msg"></p>
+                <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; font-size: 15px;">Create Account</button>
+                <span class="toggle-link" onclick="toggleAuthMode(false)">Already have an account? Login</span>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="appSection" class="hidden">
+        <header class="header">
+            <div class="logo-area">
+                <img src="watermarked_img_17775684945128307028.png.png" alt="FoodLoop Logo" class="logo-img">
+                <span class="logo-text">FoodLoop</span>
+            </div>
+            <div class="user-profile">
+                <span id="userGreeting" style="font-weight: 600; font-size: 15px;"></span>
+                <span id="userRoleBadge" class="user-badge"></span>
+                <button class="btn-logout" onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <div id="mainLayoutGrid" class="split-layout">
+                
+                <!-- RESTAURANT POSTING PANEL -->
+                <div id="restaurantPanel" class="panel hidden">
+                    <h2>➕ Post Surplus Food</h2>
+                    <form id="donationForm">
+                        <div class="form-group">
+                            <label>Food Title</label>
+                            <input type="text" id="title" placeholder="e.g. Chicken Biryani" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Food Type</label>
+                            <input type="text" id="foodType" placeholder="e.g. Cooked Food" required>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label>Quantity</label>
+                                <input type="number" id="quantity" placeholder="15" step="0.1" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Unit</label>
+                                <input type="text" id="unit" placeholder="Plates / Kg" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Pickup Location</label>
+                            <input type="text" id="pickupAddress" placeholder="e.g. KPHB Colony, Hyderabad" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Expiry Time</label>
+                            <input type="datetime-local" id="expiryTime" required>
+                        </div>
+                        <button type="submit" class="btn-primary" style="width: 100%;">Publish Listing</button>
+                    </form>
+                </div>
+
+                <!-- FEED & METRICS SECTION -->
+                <div>
+                    <!-- REAL-TIME IMPACT & ADMIN METRICS DASHBOARD -->
+                    <div id="adminMetricsBanner" class="admin-metrics-grid hidden">
+                        <div class="metric-card impact-theme">
+                            <span class="metric-title">🍲 Meals Provided</span>
+                            <span class="metric-value" id="statMeals">0</span>
+                        </div>
+                        <div class="metric-card impact-theme">
+                            <span class="metric-title">🌍 CO2 Prevented</span>
+                            <span class="metric-value" id="statCo2">0.0 kg</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-title">📦 Total Listings</span>
+                            <span class="metric-value" id="statTotalListings">0</span>
+                        </div>
+                        <div class="metric-card admin-theme">
+                            <span class="metric-title">🛡️ System Status</span>
+                            <span class="metric-value" style="font-size: 18px; color: #7c3aed;">Operational</span>
+                        </div>
+                    </div>
+
+                    <div class="toolbar">
+                        <h2 id="feedTitle" style="margin: 0; font-size: 18px; color: var(--dark);">Live Available Food</h2>
+                        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search food or location..." onkeyup="filterDonations()">
+                    </div>
+                    
+                    <div id="donationsList" class="cards-grid"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "/api/donations";
+        const AUTH_URL = "/api/auth";
+        let currentUser = null;
+        let allDonations = [];
+        let userCoords = null; // Geolocation support
+
+        // TOAST NOTIFICATIONS
+        function showToast(message, type = "success") {
+            const container = document.getElementById("toastContainer");
+            const toast = document.createElement("div");
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${type === 'success' ? '🎉' : '⚠️'}</span> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
+
+        // GET USER GEOLOCATION ON STARTUP
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userCoords = { lat: position.coords.latitude, lng: position.coords.longitude };
+                },
+                (error) => { console.log("Geolocation permission denied or unavailable."); }
+            );
+        }
+
+        // SIMULATED DISTANCE CALCULATOR
+        function calculateDistance(address) {
+            if (!userCoords) return null;
+            let hash = 0;
+            for (let i = 0; i < address.length; i++) hash = address.charCodeAt(i) + ((hash << 5) - hash);
+            let simulatedKm = (Math.abs(hash) % 15) / 2 + 0.8;
+            return simulatedKm.toFixed(1);
+        }
+
+        // URGENCY & AUTO-EXPIRY CHECKER
+        function getUrgencyBadge(expiryTimeString) {
+            const now = new Date();
+            const expiry = new Date(expiryTimeString);
+            const diffHours = (expiry - now) / (1000 * 60 * 60);
+            const diffMins = diffHours * 60;
+
+            if (diffMins <= 0) {
+                return { badge: `<span class="urgency-badge urgency-expired">EXPIRED</span>`, isExpired: true };
+            } else if (diffMins < 30) {
+                return { badge: `<span class="urgency-badge urgency-critical">⚡ Critical (< 30m)</span>`, isExpired: false };
+            } else if (diffHours < 2) {
+                return { badge: `<span class="urgency-badge urgency-urgent">⚠️ Expiring Soon (< 2h)</span>`, isExpired: false };
+            } else {
+                return { badge: `<span class="urgency-badge urgency-safe">🟢 Safe (> 3h)</span>`, isExpired: false };
+            }
+        }
+
+        function checkSession() {
+            currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            const layoutGrid = document.getElementById("mainLayoutGrid");
+            const adminBanner = document.getElementById("adminMetricsBanner");
+            const bodyTag = document.body;
+            const floatingBg = document.getElementById("floatingBgAnimations");
+            
+            if (currentUser) {
+                bodyTag.classList.remove("login-page");
+                floatingBg.classList.add("hidden");
+
+                document.getElementById("authSection").classList.add("hidden");
+                document.getElementById("appSection").classList.remove("hidden");
+                
+                document.getElementById("userGreeting").innerText = currentUser.restaurantName || currentUser.fullName;
+                
+                const badge = document.getElementById("userRoleBadge");
+                if (currentUser.role === 'RESTAURANT') {
+                    badge.innerText = 'Donor Partner';
+                    badge.className = 'user-badge';
+                    adminBanner.classList.add("hidden");
+                } else if (currentUser.role === 'NGO') {
+                    badge.innerText = 'NGO Rescuer';
+                    badge.className = 'user-badge';
+                    adminBanner.classList.remove("hidden"); // Show impact dashboard for NGOs too!
+                } else {
+                    badge.innerText = 'Superadmin HQ';
+                    badge.className = 'user-badge admin-badge';
+                    adminBanner.classList.remove("hidden");
+                }
+                
+                if (currentUser.role === 'RESTAURANT') {
+                    document.getElementById("restaurantPanel").classList.remove("hidden");
+                    layoutGrid.classList.remove("full-width");
+                    document.getElementById("feedTitle").innerText = "Your Active Listings";
+                } else {
+                    document.getElementById("restaurantPanel").classList.add("hidden");
+                    layoutGrid.classList.add("full-width");
+                    document.getElementById("feedTitle").innerText = currentUser.role === 'ADMIN' ? "⚡ Superadmin Command Center: All City Listings" : "Available Food across Hyderabad";
+                }
+                loadDonations();
+            } else {
+                bodyTag.classList.add("login-page");
+                floatingBg.classList.remove("hidden");
+
+                document.getElementById("authSection").classList.remove("hidden");
+                document.getElementById("appSection").classList.add("hidden");
+            }
+        }
+
+        function toggleAuthMode(showReg) {
+            document.getElementById("loginError").innerHTML = "";
+            document.getElementById("regError").innerHTML = "";
+            if (showReg) {
+                document.getElementById("authTitle").innerHTML = "Join FoodLoop";
+                document.getElementById("loginForm").classList.add("hidden");
+                document.getElementById("registerForm").classList.remove("hidden");
+            } else {
+                document.getElementById("authTitle").innerHTML = "Welcome Back";
+                document.getElementById("registerForm").classList.add("hidden");
+                document.getElementById("loginForm").classList.remove("hidden");
+            }
+        }
+
+        function handleRoleChange(role) {
+            const label = document.getElementById("restNameLabel");
+            const input = document.getElementById("regRestName");
+            if (role === 'RESTAURANT') {
+                label.innerText = "Restaurant Name";
+                input.placeholder = "e.g. Bawarchi Restaurant";
+            } else if (role === 'NGO') {
+                label.innerText = "NGO / Organization Name";
+                input.placeholder = "e.g. Robin Hood Army";
+            } else {
+                label.innerText = "Organization / Title";
+                input.placeholder = "e.g. FoodLoop Headquarters";
+            }
+        }
+
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("loginUsername").value;
+            const password = document.getElementById("loginPassword").value;
+            const roleInput = document.getElementById("loginRole").value; // Added role field
+
+            const res = await fetch(`${AUTH_URL}/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password }) // Assuming backend still relies just on username
+            });
+
+            if (res.ok) {
+                const user = await res.json();
+                localStorage.setItem("currentUser", JSON.stringify(user));
+                
+                if (user.role === 'ADMIN') {
+                    showToast("Admin welcome to FoodLoop!", "success");
+                } else if (user.role === 'NGO') {
+                    showToast("NGO rescuer welcome to FoodLoop!", "success");
+                } else {
+                    showToast("Donor welcome to FoodLoop!", "success");
+                }
+
+                checkSession();
+            } else {
+                document.getElementById("loginError").innerHTML = "Invalid username or password!";
+                showToast("Invalid credentials!", "error");
+            }
+        });
+
+        document.getElementById("registerForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const fullName = document.getElementById("regFullName").value;
+            const role = document.getElementById("regRole").value;
+            const restaurantName = document.getElementById("regRestName").value;
+            const username = document.getElementById("regUsername").value;
+            const password = document.getElementById("regPassword").value;
+
+            const res = await fetch(`${AUTH_URL}/register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ fullName, role, restaurantName, username, password })
+            });
+
+            if (res.ok) {
+                const user = await res.json();
+                localStorage.setItem("currentUser", JSON.stringify(user));
+                
+                if (user.role === 'ADMIN') {
+                    showToast("Admin welcome to FoodLoop!", "success");
+                } else if (user.role === 'NGO') {
+                    showToast("NGO rescuer welcome to FoodLoop!", "success");
+                } else {
+                    showToast("Donor welcome to FoodLoop!", "success");
+                }
+
+                checkSession();
+            } else {
+                document.getElementById("regError").innerHTML = "Username already exists!";
+                showToast("Registration failed: Username exists.", "error");
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem("currentUser");
+            showToast("Logged out successfully.", "success");
+            location.reload();
+        }
+
+        async function loadDonations() {
+            try {
+                const res = await fetch(API_URL);
+                allDonations = await res.json();
+                
+                // CALCULATE IMPACT & SUSTAINABILITY METRICS FOR DELIVERED ITEMS
+                const deliveredItems = allDonations.filter(d => d.status === 'DELIVERED');
+                let totalQuantityNum = deliveredItems.reduce((acc, curr) => acc + (parseFloat(curr.quantity) || 10), 0);
+                let mealsProvided = Math.round(totalQuantityNum * 2.5); 
+                let kgFoodRescued = totalQuantityNum * 0.4;
+                let co2Saved = (kgFoodRescued * 2.5).toFixed(1);
+
+                if (currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'NGO')) {
+                    document.getElementById("statTotalListings").innerText = allDonations.length;
+                    document.getElementById("statMeals").innerText = mealsProvided;
+                    document.getElementById("statCo2").innerText = co2Saved + " kg";
+                }
+
+                // GEOLOCATION SORTING (Closest first)
+                if (userCoords) {
+                    allDonations.sort((a, b) => {
+                        return parseFloat(calculateDistance(a.pickupAddress)) - parseFloat(calculateDistance(b.pickupAddress));
+                    });
+                }
+
+                renderDonations(allDonations);
+            } catch (err) {
+                console.error("Failed to load donations", err);
+            }
+        }
+
+        function renderDonations(donations) {
+            const listDiv = document.getElementById("donationsList");
+            listDiv.innerHTML = "";
+
+            const filtered = donations.filter(donation => {
+                if (currentUser.role === 'RESTAURANT') {
+                    return donation.donorName === (currentUser.restaurantName || currentUser.fullName);
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                listDiv.innerHTML = `<p style="color: var(--dark); grid-column: 1/-1; background: rgba(255,255,255,0.9); padding: 20px; border-radius: 12px; font-size: 15px;">No active food listings found.</p>`;
+                return;
+            }
+
+            filtered.forEach(donation => {
+                const mapQuery = encodeURIComponent(donation.pickupAddress);
+                const mapEmbedUrl = `https://maps.google.com/maps?q=${mapQuery}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+                const urgencyInfo = getUrgencyBadge(donation.expiryTime);
+                const distanceKm = calculateDistance(donation.pickupAddress);
+
+                let actionButtonHtml = '';
+                if (currentUser.role === 'NGO' && !urgencyInfo.isExpired) {
+                    if (donation.status === 'AVAILABLE') {
+                        actionButtonHtml = `<button class="workflow-btn btn-claim" onclick="updateStatus(${donation.id}, 'CLAIMED', '✅ Food successfully claimed!')">Claim this Food</button>`;
+                    } else if (donation.status === 'CLAIMED') {
+                        actionButtonHtml = `<button class="workflow-btn btn-transit" onclick="updateStatus(${donation.id}, 'IN_TRANSIT', '🚚 Marked as In-Transit!')">Start Transit / Pick Up</button>`;
+                    } else if (donation.status === 'IN_TRANSIT') {
+                        actionButtonHtml = `<button class="workflow-btn btn-deliver" onclick="updateStatus(${donation.id}, 'DELIVERED', '🎉 Food successfully delivered!')">Mark as Delivered</button>`;
+                    }
+                }
+
+                let deleteButtonHtml = '';
+                if (currentUser.role === 'RESTAURANT' || currentUser.role === 'ADMIN') {
+                    deleteButtonHtml = `<button class="btn-delete" onclick="deleteDonation(${donation.id})">🗑️ Remove Listing</button>`;
+                }
+
+                const card = document.createElement("div");
+                card.className = `card ${urgencyInfo.isExpired ? 'is-expired' : ''}`;
+                card.innerHTML = `
+                    <div>
+                        <div class="card-header">
+                            <span class="restaurant-tag">📍 ${donation.donorName || 'Local Donor'} <span class="trust-stars">⭐ 4.9</span></span>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                                <span class="status-badge status-${urgencyInfo.isExpired ? 'EXPIRED' : donation.status}">
+                                    ${urgencyInfo.isExpired ? 'EXPIRED' : donation.status}
+                                </span>
+                                ${urgencyInfo.badge}
+                            </div>
+                        </div>
+                        <h3 class="card-title">${donation.title}</h3>
+                        <div class="card-body">
+                            <p>🍲 <strong>Type:</strong> ${donation.foodType}</p>
+                            <p>📦 <strong>Quantity:</strong> ${donation.quantity} ${donation.unit}</p>
+                            <p>📍 <strong>Pickup:</strong> <a href="https://maps.google.com/?q=${mapQuery}" target="_blank" style="color: var(--secondary); text-decoration: none; font-weight: 500;">${donation.pickupAddress} ↗</a> ${distanceKm ? `<span style="font-size:12px; color:#059669; font-weight:700;">(📍 ${distanceKm} km away)</span>` : ''}</p>
+                            <p>⏳ <strong>Expires:</strong> ${new Date(donation.expiryTime).toLocaleString([], {hour: '2-digit', minute:'2-digit', day:'numeric', month:'short'})}</p>
+                        </div>
+                        <div class="map-container">
+                            <iframe src="${mapEmbedUrl}" allowfullscreen="" loading="lazy"></iframe>
+                        </div>
+                    </div>
+                    <div>
+                        ${actionButtonHtml}
+                        ${deleteButtonHtml}
+                    </div>
+                `;
+                listDiv.appendChild(card);
+            });
+        }
+
+        function filterDonations() {
+            const query = document.getElementById("searchInput").value.toLowerCase();
+            const results = allDonations.filter(d => 
+                d.title.toLowerCase().includes(query) || 
+                d.pickupAddress.toLowerCase().includes(query) || 
+                d.foodType.toLowerCase().includes(query)
+            );
+            renderDonations(results);
+        }
+
+        document.getElementById("donationForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const newDonation = {
+                title: document.getElementById("title").value,
+                foodType: document.getElementById("foodType").value,
+                quantity: parseFloat(document.getElementById("quantity").value),
+                unit: document.getElementById("unit").value,
+                pickupAddress: document.getElementById("pickupAddress").value,
+                expiryTime: document.getElementById("expiryTime").value + ":00",
+                donorName: currentUser.restaurantName || currentUser.fullName,
+                status: "AVAILABLE"
+            };
+
+            const res = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newDonation)
+            });
+
+            if (res.ok) {
+                showToast("🎉 Success! Food published & SMS alerts sent to city NGOs", "success");
+                document.getElementById("donationForm").reset();
+                loadDonations();
+            } else {
+                showToast("Failed to publish listing.", "error");
+            }
+        });
+
+        async function updateStatus(id, newStatus, successMessage) {
+            const res = await fetch(`${API_URL}/${id}/status?status=${newStatus}`, { method: "PUT" });
+            if (res.ok) {
+                showToast(successMessage, "success");
+                loadDonations();
+            } else {
+                showToast("Failed to update status.", "error");
+            }
+        }
+
+        async function deleteDonation(id) {
+            const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+            if (res.ok) {
+                showToast("Listing successfully removed.", "success");
+                loadDonations();
+            } else {
+                showToast("Failed to remove listing.", "error");
+            }
+        }
+
+        checkSession();
+    </script>
+</body>
+</html>
